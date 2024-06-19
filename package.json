@@ -1,0 +1,47 @@
+{
+    "name": "neko-melody",
+    "version": "1.0.0",
+    "description": "",
+    "scripts": {
+        "build": "tsup ./src",
+        "example:test": "tsup ./src && tsx ./example/test.ts",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "GPL-3.0",
+    "packageManager": "pnpm@9.3.0+sha512.ee7b93e0c2bd11409c6424f92b866f31d3ea1bef5fbe47d3c7500cdc3c9668833d2e55681ad66df5b640c61fa9dc25d546efa54d76d7f8bf54b13614ac293631",
+    "devDependencies": {
+        "@swc/core": "^1.6.1",
+        "@types/fluent-ffmpeg": "^2.1.24",
+        "@types/node": "^20.14.5",
+        "@typescript-eslint/eslint-plugin": "^7.13.1",
+        "@typescript-eslint/parser": "^7.13.1",
+        "eslint": "^9.5.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.1.3",
+        "prettier": "^3.3.2",
+        "tsup": "^8.1.0",
+        "tsx": "^4.15.6",
+        "typescript": "^5.4.5"
+    },
+    "files": [
+        "dist",
+        "package.json"
+    ],
+    "exports": {
+        ".": {
+            "require": "./dist/index.js",
+            "import": "./dist/index.mjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "dependencies": {
+        "fluent-ffmpeg": "^2.1.3",
+        "play-dl": "github:YuzuZensai/play-dl-test#test",
+        "speaker": "^0.5.5"
+    }
+}
