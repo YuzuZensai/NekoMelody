@@ -7,9 +7,11 @@ const main = async () => {
     // Create the Speaker instance
     const speaker = new Speaker();
 
+    const videoId = "9PuudPiyma4";
+
     // Get the stream from the URL
     const stream = await NekoMelody.stream(
-        "https://www.youtube.com/watch?v=9PuudPiyma4",
+        `https://www.youtube.com/watch?v=${videoId}`,
     );
 
     // PCM data from stdin gets piped into the speaker
@@ -22,10 +24,7 @@ const main = async () => {
         .on("error", (err) => {
             console.error("An error occurred:", err.message);
         })
-        .pipe(speaker, { end: true })
-        .on("end", () => {
-            console.log("Audio playback finished.");
-        });
+        .pipe(speaker, { end: true });
 };
 
 main();
