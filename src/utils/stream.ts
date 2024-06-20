@@ -125,7 +125,7 @@ export class Stream {
                 `Buffer Remaining: ${(this.stream.readableLength / (1024 * 1024)).toFixed(3)} MB | ` +
                 `${!this.fetchCompleted ? `Buffer Sufficient: ${isBufferSufficient} | ` : ``}` +
                 `Locked: ${this.locked} | ` +
-                `Fetch Completed: ${this.fetchCompleted} | `,
+                `Fetch Completed: ${this.fetchCompleted}`,
         );
     }
 
