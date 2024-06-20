@@ -1,5 +1,8 @@
-import { stream } from "./stream";
+import { Player, createPlayer } from "./player";
+
+export { Player, createPlayer };
 
 export default {
-    stream,
+    Player,
+    createPlayer,
 };

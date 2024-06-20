@@ -1,4 +1,4 @@
-type TimerState = "idle" | "running" | "paused" | "finished";
+type TimerState = "idle" | "running" | "paused" | "finished" | "destroyed";
 
 export class Timer {
     private callback: () => void | Promise<void>;
@@ -72,7 +72,11 @@ export class Timer {
     destroy() {
         this.clearExistingInterval();
         this.callback = () => {};
-        this.state = "finished";
+        this.state = "destroyed";
+    }
+
+    isDestroyed(): boolean {
+        return this.state === "destroyed";
     }
 
     getState(): TimerState {
