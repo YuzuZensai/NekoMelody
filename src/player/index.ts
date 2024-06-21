@@ -16,7 +16,7 @@ export class Player {
         this.providers = providers;
     }
 
-    public async play(url: string) {
+    public async play(url: string, seekTime: number = 0) {
         if (!this.currentProvider) {
             const providers = this.providers.filter((provider) =>
                 provider.canPlay(url),
@@ -29,15 +29,25 @@ export class Player {
             this.currentProvider = providers[0];
         }
 
-        // TODO: Handle if already playing
-
         const information = await this.currentProvider.getInformation(url);
         //console.log(information);
 
         if (information.livestream)
             // TODO: Implement livestreams
             throw new Error("Livestreams are not supported yet");
-        else this._stream = new SeekableStream(information, url);
+
+        // If already playing, destroy the current stream
+        if (this._stream) {
+            this._stream.destroy();
+        }
+
+        this._stream = new SeekableStream(information, url, seekTime);
+    }
+
+    public async seek(time: number) {
+        if (!this._stream) throw new Error("No stream to seek");
+
+        await this.play(this._stream.referenceUrl, time);
     }
 
     public getCurrentSampleRate() {

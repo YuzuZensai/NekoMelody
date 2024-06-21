@@ -766,6 +766,7 @@ export class WebmSeeker extends Duplex {
             position = 0;
         let time_left = (this.sec - this.time) * 1000 || 0;
         time_left = Math.round(time_left / 20) * 20;
+
         if (!this.header.segment.cues) return new Error("Failed to Parse Cues");
 
         for (let i = 0; i < this.header.segment.cues.length; i++) {
@@ -781,6 +782,14 @@ export class WebmSeeker extends Duplex {
             } else continue;
         }
         if (clusterlength === 0) return position;
+
+        console.debug(
+            `[WebmSeeker] > Seeking to ${this.sec} seconds, ${
+                this.offset +
+                Math.round(position + (time_left / 20) * (clusterlength / 500))
+            } bytes`,
+        );
+
         return (
             this.offset +
             Math.round(position + (time_left / 20) * (clusterlength / 500))
@@ -809,6 +818,8 @@ export class WebmSeeker extends Duplex {
 
     private readHead(): Error | undefined {
         if (!this.chunk) return new Error("Chunk is missing");
+
+        console.debug("[WebmSeeker] > Reading Head");
 
         while (this.chunk.length > this.cursor) {
             const oldCursor = this.cursor;
@@ -870,6 +881,9 @@ export class WebmSeeker extends Duplex {
         }
         this.remaining = this.chunk.slice(this.cursor);
         this.cursor = 0;
+
+        console.debug("[WebmSeeker] > Finished Reading Head");
+        this.emit("headComplete");
     }
 
     private readTag(): Error | undefined {
