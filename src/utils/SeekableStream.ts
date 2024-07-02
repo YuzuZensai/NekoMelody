@@ -49,11 +49,11 @@ export class SeekableStream {
         }, 2000);
 
         this.timer.start();
-        this.tick();
-        if (seekTime !== 0) this.seek();
+        this.tick(seekTime);
+        //if (seekTime !== 0) this.seek();
     }
 
-    private async tick() {
+    private async tick(seekTime?: number) {
         if (this.destroyed) {
             console.debug(
                 `[${this.id}] > Stream already destroyed, not ticking`,
@@ -69,16 +69,15 @@ export class SeekableStream {
             this.locked = true;
 
             // Get header
-            const rangeHeader = `bytes=${this.bytesReceived}-${this.information.indexRange.end}`;
-            const request = await getStream(this.information.url, {
+            console.debug(
+                `[${this.id}] > Requesting range | 0-${this.information.indexRange.end}`,
+            );
+
+            let request = await getStream(this.information.url, {
                 headers: {
-                    range: rangeHeader,
+                    range: `bytes=0-${this.information.indexRange.end}`,
                 },
             }).catch((err: Error) => err);
-
-            console.debug(
-                `[${this.id}] > Request first tick header range | ${rangeHeader}`,
-            );
 
             if (request instanceof Error) {
                 console.debug(
@@ -127,14 +126,27 @@ export class SeekableStream {
                 this.bytesReceived += chunk.length;
             });
 
-            incomingStream.on("end", async () => {
-                console.debug(`[${this.id}] > Header received, unlocking`);
-                this.locked = false;
+            incomingStream.pipe(this.stream, { end: false });
+
+            this.stream.once("headComplete", () => {
+                console.debug(`[${this.id}] > Header parsed, unpiping...`);
+                incomingStream.unpipe(this.stream);
                 incomingStream.destroy();
+                this.stream.state = WebmSeekerState.READING_DATA;
+                this.stream.headerparsed = true;
                 this.debugLog();
 
+                if (seekTime !== 0) this.seek();
                 this.locked = false;
             });
+
+            // incomingStream.on("end", async () => {
+            //     // console.debug(`[${this.id}] > Header received, unlocking`);
+            //     //this.locked = false;
+            //     //incomingStream.destroy();
+            //     //this.debugLog();
+            //     //this.locked = false;
+            // });
 
             return;
         }
@@ -251,6 +263,7 @@ export class SeekableStream {
                 }).catch((err: Error) => err);
 
                 if (req instanceof Error || req.status >= 400) {
+                    console.error(`[${this.id}] > Request error: ${req}`);
                     reject(false);
                     return;
                 }
@@ -285,6 +298,7 @@ export class SeekableStream {
 
         const bytes = this.stream.seek(this.information.fileSize);
         if (bytes instanceof Error) {
+            console.error(`[${this.id}] > Seek error: ${bytes.message}`);
             // TODO: Handle seek error
             this.destroy();
             return false;
@@ -350,6 +364,7 @@ export class SeekableStream {
                 `Buffer Remaining: ${(this.stream.readableLength / (1024 * 1024)).toFixed(3)} MB | ` +
                 `${!false ? `Buffer Sufficient: ${isBufferSufficient} | ` : ``}` +
                 `Locked: ${this.locked} | `, // +
+            //`Stream URL: ${this.information.url} | `,
             //`Fetch Completed: ${this.fetchCompleted}`,
         );
     }
