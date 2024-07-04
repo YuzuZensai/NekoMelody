@@ -1,4 +1,4 @@
-import { Readable } from "stream";
+import { EventEmitter, Readable } from "stream";
 import { AudioInformation } from "../providers/base";
 import { Timer } from "./Timer";
 import { WebmSeeker, WebmSeekerState } from "./WebmSeeker";
@@ -18,6 +18,7 @@ export class SeekableStream {
     private locked: boolean = false;
     private firstTick: boolean = true;
     private destroyed: boolean = false;
+    private event: EventEmitter = new EventEmitter();
 
     private bytesReceived: number = 0;
     private bytesRead: number = 0;
@@ -240,12 +241,28 @@ export class SeekableStream {
         if (
             !this.locked &&
             this.bytesReceived >= this.information.fileSize &&
-            this.stream.readableLength === 0
+            this.stream.readableLength === 0 &&
+            this.bytesRead >= this.information.fileSize &&
+            this.stream.state === WebmSeekerState.READING_DATA &&
+            !this.stream.readableEnded
         ) {
             console.debug(`[${this.id}] > Stream completed`);
-            this.destroy();
-            return;
+            this.stream.push(null);
         }
+
+        // if (
+        //     !this.locked &&
+        //     this.bytesReceived >= this.information.fileSize &&
+        //     this.stream.readableLength === 0 &&
+        //     this.bytesRead >= this.information.fileSize &&
+        //     this.stream.state === WebmSeekerState.READING_DATA &&
+        //     !this.stream.readableFlowing &&
+        //     this.stream.readableEnded &&
+        // ) {
+        //     console.debug(`[${this.id}] > Stream ended`);
+        //     //this.destroy();
+        //     return;
+        // }
     }
 
     public async seek(): Promise<boolean> {
@@ -338,18 +355,22 @@ export class SeekableStream {
     }
 
     public on(event: string, listener: (...args: any[]) => void) {
-        this.stream.on(event, listener);
+        this.event.on(event, listener);
     }
 
     public destroy() {
+        if (this.destroyed) return;
+
         console.debug(`[${this.id}] > Stream destroyed`);
         if (!this.timer.isDestroyed()) this.timer.destroy();
         if (this.stream) {
+            //this.stream.push(null);
             this.stream.end();
             this.stream.destroy();
         }
 
         this.destroyed = true;
+        this.event.emit("destroy");
     }
 
     private debugLog() {
