@@ -2,22 +2,91 @@ import NekoMelody, { Player } from "../src";
 
 import Speaker from "speaker";
 import ffmpeg from "fluent-ffmpeg";
+import {
+    NoSubscriberBehavior,
+    VoiceConnectionStatus,
+    createAudioPlayer,
+    createAudioResource,
+    joinVoiceChannel,
+} from "@discordjs/voice";
 import { YtDlpProvider } from "../src/providers";
+import { AudioInformation } from "../src/providers/base";
+import { Client, IntentsBitField } from "discord.js";
+
+import dotenv from "dotenv";
+dotenv.config();
 
 const main = async () => {
+    // Discord Client
+    const client = new Client({
+        intents: [
+            IntentsBitField.Flags.Guilds,
+            IntentsBitField.Flags.GuildVoiceStates,
+        ],
+    });
+    client.login(process.env.BOT_TOKEN);
+
+    // Wait until the client is ready
+    await new Promise((resolve) => {
+        client.once("ready", resolve);
+    });
+
+    // Get channel
+    const guild = client.guilds.cache.get(process.env.GUILD_ID ?? "");
+    if (!guild) throw new Error("Guild not found");
+
+    const member = guild.members.cache.get(process.env.MEMBER_ID ?? "");
+    if (!member) throw new Error("Member not found");
+
+    if (!member.voice.channel) {
+        throw new Error("Member is not connected to a voice channel.");
+    }
+
+    console.log("Joining voice channel", member.voice.channel.name);
+    // Join voice channel
+    const connection = joinVoiceChannel({
+        channelId: member.voice.channel.id,
+        guildId: guild.id,
+        adapterCreator: member.voice.channel.guild.voiceAdapterCreator,
+    });
+
+    // Wait until the connection is ready
+    await new Promise((resolve) => {
+        connection.on(VoiceConnectionStatus.Ready, resolve);
+    });
+
     const videoId = "2gigEGxnsmo";
+    const videoId2 = "oM-JneFEdBk";
 
     // Providers
     const providers = [new YtDlpProvider()];
     const player = NekoMelody.createPlayer(providers);
+    const discordPlayer = createAudioPlayer({
+        behaviors: {
+            noSubscriber: NoSubscriberBehavior.Pause,
+        },
+    });
+    connection.subscribe(discordPlayer);
 
-    await player.play(`https://www.youtube.com/watch?v=${videoId}`);
-    playSpeaker(player);
+    player.on("play", (information: AudioInformation) => {
+        if (!player.stream) throw new Error("No input stream");
+        //playSpeaker(player);
 
-    // setTimeout(async () => {
-    //     await player.seek(100);
-    //     playSpeaker(player);
-    // }, 5000);
+        const resource = createAudioResource(player.stream, {
+            //inlineVolume: true,
+        });
+        discordPlayer.play(resource);
+
+        discordPlayer.on("stateChange", (oldState, newState) => {
+            console.log("State change", oldState.status, newState.status);
+            if (oldState.status === "playing" && newState.status === "idle") {
+                player.endCurrentStream();
+            }
+        });
+    });
+
+    await player.enqueue(`https://www.youtube.com/watch?v=${videoId}`);
+    await player.enqueue(`https://www.youtube.com/watch?v=${videoId2}`);
 };
 
 // TODO: player end event to automate changing the stream
@@ -57,7 +126,7 @@ const playSpeaker = async (player: Player) => {
         .audioChannels(2)
         .audioFrequency(44100)
         .on("error", (err) => {
-            console.error("An error occurred:", err.message);
+            console.error("[FFmpeg] > Error:", err.message);
         });
 
     // Pipe the ffmpeg output to the speaker
