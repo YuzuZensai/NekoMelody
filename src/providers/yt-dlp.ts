@@ -6,8 +6,19 @@ export class YtDlpProvider extends Provider {
     public ytDlpWrap = new YTDlpWrap();
 
     public canPlay(url: string) {
-        // TODO: Implement this
-        return true;
+        return this.checkUrl(url);
+    }
+
+    private checkUrl(url: string) {
+        // https://www.youtube.com/watch?v=
+        // https://youtu.be/
+        if (
+            url.startsWith("https://www.youtube.com/watch?v=") ||
+            url.startsWith("https://youtu.be/")
+        )
+            return true;
+
+        return false;
     }
 
     public async getInformation(url: string) {

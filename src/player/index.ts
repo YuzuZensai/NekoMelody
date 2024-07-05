@@ -49,6 +49,12 @@ export class Player {
         this.playerEvent.emit("play", information);
     }
 
+    public startCurrentStream() {
+        if (this._stream) {
+            this._stream.start();
+        }
+    }
+
     public endCurrentStream() {
         if (this._stream) {
             this._stream.destroy();

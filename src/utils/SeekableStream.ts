@@ -19,6 +19,7 @@ export class SeekableStream {
     private firstTick: boolean = true;
     private destroyed: boolean = false;
     private event: EventEmitter = new EventEmitter();
+    private started: boolean = false;
 
     private bytesReceived: number = 0;
     private bytesRead: number = 0;
@@ -52,6 +53,10 @@ export class SeekableStream {
         this.timer.start();
         this.tick(seekTime);
         //if (seekTime !== 0) this.seek();
+    }
+
+    public start() {
+        this.started = true;
     }
 
     private async tick(seekTime?: number) {
@@ -151,6 +156,8 @@ export class SeekableStream {
 
             return;
         }
+
+        if (!this.started) return;
 
         const isBufferSufficient =
             this.stream.readableLength >= this.bytesPerRequestLimit;
