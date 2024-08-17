@@ -127,6 +127,10 @@ export class Player {
         return this._stream?.information.bitrate || 0;
     }
 
+    public getCurrentAudioInformation() {
+        return this.currentAudioInformation;
+    }
+
     public getQueue() {
         return this.queue;
     }
