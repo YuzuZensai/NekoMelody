@@ -1,4 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import puppeteer, { Browser } from "puppeteer";
+
+let browser: Browser | null = null;
 
 export async function makeStreamRequest(
     url: string,
@@ -55,12 +58,14 @@ export async function getStream(
 }
 
 export async function getYouTubeFormats(id: string) {
-    const new_url = `https://www.youtube.com/watch?v=${id}&has_verified=1`;
-    const response = await axios.get(new_url, {
-        headers: { "accept-language": "en-US,en;q=0.9" },
-        withCredentials: true,
+    if (!browser) browser = await puppeteer.launch();
+
+    const page = await browser.newPage();
+    await page.goto(`https://www.youtube.com/watch?v=${id}&has_verified=1`, {
+        waitUntil: "networkidle2",
     });
-    const body = response.data;
+    const body = await page.evaluate(() => document.body.innerHTML);
+    await page.close();
 
     const match = body.match(
         /var ytInitialPlayerResponse = (.*?)(?=;\s*<\/script>)/,
