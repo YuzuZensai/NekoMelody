@@ -73,6 +73,7 @@ export class YtDlpProvider extends Provider {
                 metadata: {
                     title: ytDlpWrapInfo.title,
                     thumbnail: bestThumbnail,
+                    url: `https://www.youtube.com/watch?v=${ytDlpWrapInfo.id}`,
                 },
             } as AudioInformation;
         };

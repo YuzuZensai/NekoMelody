@@ -11,6 +11,7 @@ export interface AudioInformation {
     metadata: {
         title: string | null;
         thumbnail: string | null;
+        url: string;
     };
     refreshInfoFunction: () => Promise<AudioInformation>;
 }
