@@ -123,6 +123,17 @@ export class Player {
         await this.play(this._stream.referenceUrl, time);
     }
 
+    public async skip() {
+        if (this.queue.length === 0) {
+            throw new Error("No song in queue");
+        }
+
+        const next = this.queue.shift();
+        if (next) {
+            this._createStream(next, next.url, 0);
+        }
+    }
+
     public getCurrentSampleRate() {
         return this._stream?.information.bitrate || 0;
     }
