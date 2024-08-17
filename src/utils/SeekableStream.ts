@@ -1,8 +1,9 @@
-import { EventEmitter, Readable } from "stream";
+import { Readable } from "stream";
 import { AudioInformation } from "../providers/base";
 import { Timer } from "./Timer";
 import { WebmSeeker, WebmSeekerState } from "./WebmSeeker";
 import { getStream } from "./Request";
+import EventEmitter from "events";
 
 const DEBUG_SIMULATE_FAILURE = false;
 

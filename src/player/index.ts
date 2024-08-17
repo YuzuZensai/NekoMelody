@@ -1,6 +1,7 @@
-import { EventEmitter, Readable, Stream } from "stream";
+import { Readable, Stream } from "stream";
 import { AudioInformation, Provider } from "../providers/base";
 import { SeekableStream } from "../utils/SeekableStream";
+import EventEmitter from "events";
 
 export class Player {
     private providers: Provider[];
