@@ -376,8 +376,8 @@ export class SeekableStream {
         console.debug(`[${this.id}] > Stream destroyed`);
         if (!this.timer.isDestroyed()) this.timer.destroy();
         if (this.stream) {
-            //this.stream.push(null);
-            this.stream.end();
+            this.stream.push(null);
+            //this.stream.end();
             this.stream.destroy();
         }
 
