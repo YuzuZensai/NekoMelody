@@ -125,6 +125,14 @@ export class Player {
     public getCurrentSampleRate() {
         return this._stream?.information.bitrate || 0;
     }
+
+    public getQueue() {
+        return this.queue;
+    }
+
+    public clearQueue() {
+        this.queue = [];
+    }
 }
 
 export function createPlayer(providers: Provider[]) {
