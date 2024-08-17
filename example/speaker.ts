@@ -21,12 +21,10 @@ const main = async () => {
         player.startCurrentStream();
     });
 
-    const info = await player.enqueue(
-        `https://www.youtube.com/watch?v=${videoId}`,
-    );
-    console.log(info);
-
+    await player.enqueue(`https://www.youtube.com/watch?v=${videoId}`);
     await player.enqueue(`https://www.youtube.com/watch?v=${videoId2}`);
+
+    console.log(player.getQueue());
 };
 
 let lastFFmpeg: ffmpeg.FfmpegCommand | null = null;
@@ -68,6 +66,7 @@ const playSpeaker = async (player: Player) => {
         // .on("end", async () => {
         //     await closeSpeaker();
         // })
+        // @ts-expect-error - ffmpeg typings are incorrect
         .on("error", (err) => {
             console.error("[FFmpeg] > Error:", err.message);
         });

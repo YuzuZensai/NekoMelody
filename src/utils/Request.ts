@@ -65,7 +65,7 @@ export async function getYouTubeFormats(id: string) {
         waitUntil: "networkidle2",
     });
     const body = await page.evaluate(() => document.body.innerHTML);
-    await page.close();
+    page.close();
 
     const match = body.match(
         /var ytInitialPlayerResponse = (.*?)(?=;\s*<\/script>)/,
@@ -91,6 +91,7 @@ export async function getYouTubeFormats(id: string) {
 
         return formats;
     } catch (err) {
+        console.error(err);
         throw new Error("Failed to parse YouTube formats");
     }
 }

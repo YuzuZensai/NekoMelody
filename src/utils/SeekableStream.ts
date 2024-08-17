@@ -366,6 +366,10 @@ export class SeekableStream {
         this.event.on(event, listener);
     }
 
+    public removeAllListeners(event: string) {
+        this.event.removeAllListeners(event);
+    }
+
     public destroy() {
         if (this.destroyed) return;
 

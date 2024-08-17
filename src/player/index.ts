@@ -12,6 +12,7 @@ export class Player {
     private currentAudioInformation: AudioInformation | null = null;
 
     public _stream: SeekableStream | null = null;
+    private _skipFlag: boolean = false;
 
     constructor(providers: Provider[]) {
         this.providers = providers;
@@ -25,26 +26,17 @@ export class Player {
         information: AudioInformation,
         url: string,
         seekTime: number,
+        noDestroy: boolean = false,
     ) {
         // If already playing, destroy the current stream
-        if (this._stream) {
+        if (this._stream && !noDestroy) {
             this._stream.destroy();
         }
 
         this._stream = new SeekableStream(information, url, seekTime);
         this.currentAudioInformation = information;
         this._stream.on("destroy", () => {
-            console.log("Stream destroyed, total song", this.queue.length);
-            if (this.queue.length > 0) {
-                const next = this.queue.shift();
-                console.log("Playing next in queue");
-                if (next) {
-                    this._createStream(next, next.url, 0);
-                }
-            } else {
-                this._stream = null;
-                this.currentAudioInformation = null;
-            }
+            console.debug("Stream destroyed");
         });
 
         this.playerEvent.emit("play", information);
@@ -56,10 +48,30 @@ export class Player {
         }
     }
 
-    public endCurrentStream() {
+    public endCurrentStream(skip: boolean = false) {
+        if (this._skipFlag) {
+            return;
+        }
+
+        if (skip) {
+            this._skipFlag = true;
+        }
+
         if (this._stream) {
             this._stream.destroy();
         }
+
+        if (this.queue.length > 0) {
+            const next = this.queue.shift();
+            if (next) {
+                this._createStream(next, next.url, 0);
+            }
+        } else {
+            this._stream = null;
+            this.currentAudioInformation = null;
+        }
+
+        this._skipFlag = false;
     }
 
     public on(event: string, listener: (...args: any[]) => void) {
@@ -79,12 +91,17 @@ export class Player {
             this.currentProvider = providers[0];
         }
 
+        console.debug(
+            "Using provider",
+            this.currentProvider.constructor.name,
+            url,
+        );
+
         return await this.currentProvider.getInformation(url);
     }
 
     public async play(url: string, seekTime: number = 0) {
         const information = await this.getInformation(url);
-        //console.log(information);
 
         if (information.livestream)
             // TODO: Implement livestreams
@@ -124,14 +141,8 @@ export class Player {
     }
 
     public async skip() {
-        if (this.queue.length === 0) {
-            throw new Error("No song in queue");
-        }
-
-        const next = this.queue.shift();
-        if (next) {
-            this._createStream(next, next.url, 0);
-        }
+        this.endCurrentStream(true);
+        console.debug("Skipping");
     }
 
     public getCurrentSampleRate() {
