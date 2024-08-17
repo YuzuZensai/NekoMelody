@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const main = async () => {
-    const videoId = "2gigEGxnsmo";
+    const videoId = "l6gPxDSNbVk";
     const videoId2 = "oM-JneFEdBk";
 
     // Providers
@@ -21,7 +21,11 @@ const main = async () => {
         player.startCurrentStream();
     });
 
-    await player.enqueue(`https://www.youtube.com/watch?v=${videoId}`);
+    const info = await player.enqueue(
+        `https://www.youtube.com/watch?v=${videoId}`,
+    );
+    console.log(info);
+
     await player.enqueue(`https://www.youtube.com/watch?v=${videoId2}`);
 };
 

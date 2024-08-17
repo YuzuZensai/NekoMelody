@@ -113,7 +113,7 @@ export class Player {
             this.queue.push(information);
         }
 
-        console.log("Enqueued", url);
+        return information;
     }
 
     public async seek(time: number) {

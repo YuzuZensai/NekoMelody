@@ -8,6 +8,10 @@ export interface AudioInformation {
     };
     bitrate: number;
     livestream: boolean;
+    metadata: {
+        title: string | null;
+        thumbnail: string | null;
+    };
     refreshInfoFunction: () => Promise<AudioInformation>;
 }
 

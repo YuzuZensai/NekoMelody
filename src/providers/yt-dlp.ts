@@ -43,6 +43,24 @@ export class YtDlpProvider extends Provider {
                 throw new Error("Failed to parse YouTube formats");
             }
 
+            let bestThumbnail = null;
+
+            type Thumbnail = { url: string; preference: number };
+            const sortedThumbnails = ytDlpWrapInfo.thumbnails.sort(
+                (a: Thumbnail, b: Thumbnail) => b.preference - a.preference,
+            );
+
+            for (let thumbnail of sortedThumbnails) {
+                try {
+                    const response = await fetch(thumbnail.url);
+
+                    if (response.status === 200) {
+                        bestThumbnail = thumbnail.url;
+                        break;
+                    }
+                } catch (error) {}
+            }
+
             return {
                 url: ytDlpWrapInfo.url,
                 fileSize: ytDlpWrapInfo.filesize,
@@ -52,6 +70,10 @@ export class YtDlpProvider extends Provider {
                 bitrate: ytDlpWrapInfo.asr, //bitrate: Math.ceil((ytDlpWrapInfo.tbr || 128) * 1000),
                 livestream: ytDlpWrapInfo.is_live,
                 refreshInfoFunction,
+                metadata: {
+                    title: ytDlpWrapInfo.title,
+                    thumbnail: bestThumbnail,
+                },
             } as AudioInformation;
         };
 
