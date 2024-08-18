@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import playwright, { Browser } from "playwright";
 
-let browser: Browser | null = null;
+let lastUpdate: Date | null = null;
 let globalHeaders: Record<string, string> = {};
 let globalCookies: string = "";
 
@@ -63,8 +63,15 @@ export async function getStream(
 }
 
 export async function getYouTubeFormats(id: string) {
-    if (!browser) {
-        browser = await playwright["chromium"].launch({
+    let body;
+    if (
+        !globalCookies ||
+        !globalHeaders ||
+        !lastUpdate ||
+        lastUpdate < new Date(Date.now() - 30 * 60 * 1000)
+    ) {
+        console.debug("Using playwright");
+        const browser = await playwright["chromium"].launch({
             headless: true,
             args: [
                 "--disable-gpu",
@@ -80,29 +87,44 @@ export async function getYouTubeFormats(id: string) {
             ],
         });
 
-        browser.once("disconnected", () => {
-            browser = null;
+        const page = await browser.newPage();
+
+        page.once("request", (request) => {
+            globalHeaders = request.headers();
         });
+
+        await page.goto(
+            `https://www.youtube.com/watch?v=${id}&has_verified=1`,
+            {
+                waitUntil: "domcontentloaded",
+            },
+        );
+        body = await page.evaluate(() => document.body.innerHTML);
+
+        const cookies = await page.context().cookies();
+
+        globalCookies = cookies
+            .map((cookie) => `${cookie.name}=${cookie.value}`)
+            .join("; ");
+
+        await page.close();
+        await browser.close();
+
+        lastUpdate = new Date();
+    } else {
+        console.debug("Using axios");
+        const response = await axios.get(
+            `https://www.youtube.com/watch?v=${id}&has_verified=1`,
+            {
+                headers: {
+                    ...globalHeaders,
+                    Cookie: globalCookies,
+                },
+            },
+        );
+
+        body = response.data;
     }
-
-    const page = await browser.newPage();
-
-    page.once("request", (request) => {
-        globalHeaders = request.headers();
-    });
-
-    await page.goto(`https://www.youtube.com/watch?v=${id}&has_verified=1`, {
-        waitUntil: "domcontentloaded",
-    });
-    const body = await page.evaluate(() => document.body.innerHTML);
-    const cookies = await page.context().cookies();
-
-    globalCookies = cookies
-        .map((cookie) => `${cookie.name}=${cookie.value}`)
-        .join("; ");
-
-    await page.close();
-    await browser.close();
 
     const match = body.match(
         /var ytInitialPlayerResponse = (.*?)(?=;\s*<\/script>)/,
