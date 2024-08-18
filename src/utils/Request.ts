@@ -2,6 +2,8 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import playwright, { Browser } from "playwright";
 
 let browser: Browser | null = null;
+let globalHeaders: Record<string, string> = {};
+let globalCookies: string = "";
 
 export async function makeStreamRequest(
     url: string,
@@ -9,11 +11,14 @@ export async function makeStreamRequest(
     body?: any,
 ): Promise<AxiosResponse> {
     const { headers = {}, method = "GET" } = options;
-
     let config: AxiosRequestConfig = {
         url,
         method,
-        headers,
+        headers: {
+            ...globalHeaders,
+            ...headers,
+            Cookie: globalCookies,
+        },
         data: body,
         responseType: "stream",
     };
@@ -81,10 +86,21 @@ export async function getYouTubeFormats(id: string) {
     }
 
     const page = await browser.newPage();
+
+    page.once("request", (request) => {
+        globalHeaders = request.headers();
+    });
+
     await page.goto(`https://www.youtube.com/watch?v=${id}&has_verified=1`, {
         waitUntil: "domcontentloaded",
     });
     const body = await page.evaluate(() => document.body.innerHTML);
+    const cookies = await page.context().cookies();
+
+    globalCookies = cookies
+        .map((cookie) => `${cookie.name}=${cookie.value}`)
+        .join("; ");
+
     await page.close();
     await browser.close();
 
