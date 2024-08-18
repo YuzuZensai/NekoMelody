@@ -16,6 +16,7 @@ export class Player {
     private paused: boolean = false;
     private currentAudioInformation: AudioInformation | null = null;
     private loopMode: LoopMode = LoopMode.None;
+    private previousAudioInformation: AudioInformation | null = null;
 
     public _stream: SeekableStream | null = null;
     private _skipFlag: boolean = false;
@@ -67,6 +68,8 @@ export class Player {
             this._stream.destroy();
         }
 
+        this.previousAudioInformation = this.currentAudioInformation;
+
         if (this.loopMode === LoopMode.Current) {
             this._createStream(
                 this.currentAudioInformation as AudioInformation,
@@ -114,6 +117,10 @@ export class Player {
         );
 
         return await this.currentProvider.getInformation(url);
+    }
+
+    public getPreviousAudioInformation() {
+        return this.previousAudioInformation;
     }
 
     public async play(url: string, seekTime: number = 0) {
