@@ -386,6 +386,7 @@ export class SeekableStream {
     }
 
     private debugLog() {
+        if (process.env.NODE_ENV === "production") return;
         //        console.debug("Tick");
         const isBufferSufficient =
             this.stream.readableLength >= this.bytesPerRequestLimit;
