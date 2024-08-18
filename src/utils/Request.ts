@@ -1,5 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
-import playwright, { Browser } from "playwright";
+import playwright, { chromium } from "playwright-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+chromium.use(StealthPlugin());
 
 let lastUpdate: Date | null = null;
 let globalHeaders: Record<string, string> = {};
@@ -71,7 +73,7 @@ export async function getYouTubeFormats(id: string) {
         lastUpdate < new Date(Date.now() - 30 * 60 * 1000)
     ) {
         console.debug("Using playwright");
-        const browser = await playwright["chromium"].launch({
+        const browser = await chromium.launch({
             headless: true,
             args: [
                 "--disable-gpu",
@@ -110,6 +112,9 @@ export async function getYouTubeFormats(id: string) {
         await page.close();
         await browser.close();
 
+        console.debug("New cookies", globalCookies);
+        console.debug("New headers", globalHeaders);
+
         lastUpdate = new Date();
     } else {
         console.debug("Using axios");
@@ -126,10 +131,14 @@ export async function getYouTubeFormats(id: string) {
         body = response.data;
     }
 
-    const match = body.match(
+    const scriptMatch = body.match(
         /var ytInitialPlayerResponse = (.*?)(?=;\s*<\/script>)/,
     );
-    const data = match ? match[1] : null;
+    const scriptData = scriptMatch ? scriptMatch[1] : null;
+    if (!scriptData) throw new Error("Failed to get YouTube formats");
+
+    const jsonMatch = scriptData.match(/{.*}/);
+    const data = jsonMatch ? jsonMatch[0] : null;
     if (!data) throw new Error("Failed to get YouTube formats");
 
     try {
@@ -150,7 +159,7 @@ export async function getYouTubeFormats(id: string) {
 
         return formats;
     } catch (err) {
-        console.error(err);
+        console.error(data, err);
         throw new Error("Failed to parse YouTube formats");
     }
 }
