@@ -4,8 +4,8 @@ import { SeekableStream } from "../utils/SeekableStream";
 import EventEmitter from "events";
 
 export enum LoopMode {
-    None,
-    Current,
+    None = "none",
+    Current = "current",
 }
 
 export class Player {
