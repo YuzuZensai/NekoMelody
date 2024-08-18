@@ -70,13 +70,15 @@ export class Player {
 
         this.previousAudioInformation = this.currentAudioInformation;
 
-        if (this.loopMode === LoopMode.Current) {
+        if (this.loopMode === LoopMode.Current && !skip) {
             this._createStream(
                 this.currentAudioInformation as AudioInformation,
                 this.currentAudioInformation?.url as string,
                 0,
                 true,
             );
+
+            this._skipFlag = false;
             return;
         }
 
