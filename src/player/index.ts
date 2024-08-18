@@ -3,6 +3,11 @@ import { AudioInformation, Provider } from "../providers/base";
 import { SeekableStream } from "../utils/SeekableStream";
 import EventEmitter from "events";
 
+export enum LoopMode {
+    None,
+    Current,
+}
+
 export class Player {
     private providers: Provider[];
     private currentProvider: Provider | null = null;
@@ -10,6 +15,7 @@ export class Player {
     private playerEvent: EventEmitter = new EventEmitter();
     private paused: boolean = false;
     private currentAudioInformation: AudioInformation | null = null;
+    private loopMode: LoopMode = LoopMode.None;
 
     public _stream: SeekableStream | null = null;
     private _skipFlag: boolean = false;
@@ -59,6 +65,16 @@ export class Player {
 
         if (this._stream) {
             this._stream.destroy();
+        }
+
+        if (this.loopMode === LoopMode.Current) {
+            this._createStream(
+                this.currentAudioInformation as AudioInformation,
+                this.currentAudioInformation?.url as string,
+                0,
+                true,
+            );
+            return;
         }
 
         if (this.queue.length > 0) {
@@ -132,6 +148,14 @@ export class Player {
         }
 
         return information;
+    }
+
+    public setLoopMode(mode: LoopMode) {
+        this.loopMode = mode;
+    }
+
+    public getLoopMode() {
+        return this.loopMode;
     }
 
     public async seek(time: number) {
