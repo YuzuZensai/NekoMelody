@@ -66,7 +66,6 @@ const playSpeaker = async (player: Player) => {
         // .on("end", async () => {
         //     await closeSpeaker();
         // })
-        // @ts-expect-error - ffmpeg typings are incorrect
         .on("error", (err) => {
             console.error("[FFmpeg] > Error:", err.message);
         });
