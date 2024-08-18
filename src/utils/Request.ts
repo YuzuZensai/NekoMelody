@@ -3,6 +3,10 @@ import playwright, { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 chromium.use(StealthPlugin());
 
+// 2 hour
+const TIMEOUT = 2 * 60 * 60 * 1000;
+
+let isUpdating = false;
 let lastUpdate: Date | null = null;
 let globalHeaders: Record<string, string> = {};
 let globalCookies: string = "";
@@ -13,6 +17,18 @@ export async function makeStreamRequest(
     body?: any,
 ): Promise<AxiosResponse> {
     const { headers = {}, method = "GET" } = options;
+
+    if (isUpdating) {
+        let timeout = 0;
+        while (isUpdating && timeout < 30000) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            timeout += 100;
+        }
+        if (isUpdating) {
+            throw new Error("Failed to update headers and cookies");
+        }
+    }
+
     let config: AxiosRequestConfig = {
         url,
         method,
@@ -65,57 +81,26 @@ export async function getStream(
 }
 
 export async function getYouTubeFormats(id: string) {
+    if (isUpdating) {
+        let timeout = 0;
+        while (isUpdating && timeout < 30000) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            timeout += 100;
+        }
+        if (isUpdating) {
+            throw new Error("Failed to update headers and cookies");
+        }
+    }
+
     let body;
     if (
-        !globalCookies ||
-        !globalHeaders ||
-        !lastUpdate ||
-        lastUpdate < new Date(Date.now() - 30 * 60 * 1000)
+        (!globalCookies ||
+            !globalHeaders ||
+            !lastUpdate ||
+            lastUpdate < new Date(Date.now() - TIMEOUT)) &&
+        !isUpdating
     ) {
-        console.debug("Using playwright");
-        const browser = await chromium.launch({
-            headless: true,
-            args: [
-                "--disable-gpu",
-                "--disable-dev-shm-usage",
-                "--disable-setuid-sandbox",
-                "--no-first-run",
-                "--no-sandbox",
-                "--no-zygote",
-                "--deterministic-fetch",
-                "--disable-features=IsolateOrigins",
-                "--disable-site-isolation-trials",
-                "--single-process",
-            ],
-        });
-
-        const page = await browser.newPage();
-
-        page.once("request", (request) => {
-            globalHeaders = request.headers();
-        });
-
-        await page.goto(
-            `https://www.youtube.com/watch?v=${id}&has_verified=1`,
-            {
-                waitUntil: "domcontentloaded",
-            },
-        );
-        body = await page.evaluate(() => document.body.innerHTML);
-
-        const cookies = await page.context().cookies();
-
-        globalCookies = cookies
-            .map((cookie) => `${cookie.name}=${cookie.value}`)
-            .join("; ");
-
-        await page.close();
-        await browser.close();
-
-        console.debug("New cookies", globalCookies);
-        console.debug("New headers", globalHeaders);
-
-        lastUpdate = new Date();
+        body = await updateHeaderAndCookies(id);
     } else {
         console.debug("Using axios");
         const response = await axios.get(
@@ -163,3 +148,70 @@ export async function getYouTubeFormats(id: string) {
         throw new Error("Failed to parse YouTube formats");
     }
 }
+
+async function updateHeaderAndCookies(id: string = "-VKIqrvVOpo") {
+    if (isUpdating) {
+        return;
+    }
+    console.debug("[Request] Updating headers and cookies using playwright");
+    isUpdating = true;
+    try {
+        const browser = await chromium.launch({
+            headless: true,
+            args: [
+                "--disable-gpu",
+                "--disable-dev-shm-usage",
+                "--disable-setuid-sandbox",
+                "--no-first-run",
+                "--no-sandbox",
+                "--no-zygote",
+                "--deterministic-fetch",
+                "--disable-features=IsolateOrigins",
+                "--disable-site-isolation-trials",
+                "--single-process",
+            ],
+        });
+
+        const page = await browser.newPage();
+
+        page.once("request", (request) => {
+            globalHeaders = request.headers();
+        });
+
+        await page.goto(
+            `https://www.youtube.com/watch?v=${id}&has_verified=1`,
+            {
+                waitUntil: "domcontentloaded",
+            },
+        );
+
+        const body = await page.evaluate(() => document.body.innerHTML);
+        const cookies = await page.context().cookies();
+
+        globalCookies = cookies
+            .map((cookie) => `${cookie.name}=${cookie.value}`)
+            .join("; ");
+
+        await page.close();
+        await browser.close();
+
+        console.debug("[Request] New cookies", globalCookies);
+        console.debug("[Request] New headers", globalHeaders);
+
+        lastUpdate = new Date();
+        return body;
+    } catch (err) {
+        console.error(err);
+    } finally {
+        isUpdating = false;
+    }
+}
+
+updateHeaderAndCookies();
+
+setInterval(
+    () => {
+        updateHeaderAndCookies();
+    },
+    Math.floor(TIMEOUT / 2),
+);
