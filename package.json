@@ -50,7 +50,7 @@
         "music-metadata": "^8.3.0",
         "play-audio": "^0.5.2",
         "play-dl": "github:YuzuZensai/play-dl-test#test",
-        "puppeteer": "^23.1.0",
+        "playwright": "^1.46.1",
         "readable-web-to-node-stream": "^3.0.2",
         "speaker": "^0.5.5",
         "yt-dlp-wrap": "^2.3.12"

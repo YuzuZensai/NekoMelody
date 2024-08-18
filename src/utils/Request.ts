@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
-import puppeteer, { Browser } from "puppeteer";
+import playwright, { Browser } from "playwright";
 
 let browser: Browser | null = null;
 
@@ -59,7 +59,7 @@ export async function getStream(
 
 export async function getYouTubeFormats(id: string) {
     if (!browser) {
-        browser = await puppeteer.launch({
+        browser = await playwright["chromium"].launch({
             headless: true,
             args: [
                 "--disable-gpu",
@@ -82,10 +82,11 @@ export async function getYouTubeFormats(id: string) {
 
     const page = await browser.newPage();
     await page.goto(`https://www.youtube.com/watch?v=${id}&has_verified=1`, {
-        waitUntil: "networkidle2",
+        waitUntil: "domcontentloaded",
     });
     const body = await page.evaluate(() => document.body.innerHTML);
-    page.close();
+    await page.close();
+    await browser.close();
 
     const match = body.match(
         /var ytInitialPlayerResponse = (.*?)(?=;\s*<\/script>)/,
