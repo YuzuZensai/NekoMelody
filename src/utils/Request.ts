@@ -158,18 +158,6 @@ async function updateHeaderAndCookies(id: string = "-VKIqrvVOpo") {
     try {
         const browser = await chromium.launch({
             headless: true,
-            args: [
-                "--disable-gpu",
-                "--disable-dev-shm-usage",
-                "--disable-setuid-sandbox",
-                "--no-first-run",
-                "--no-sandbox",
-                "--no-zygote",
-                "--deterministic-fetch",
-                "--disable-features=IsolateOrigins",
-                "--disable-site-isolation-trials",
-                "--single-process",
-            ],
         });
 
         const page = await browser.newPage();
